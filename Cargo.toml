@@ -6,3 +6,4 @@ authors = ["Matthew Piziak <matthew.piziak@gmail.com>"]
 [dependencies]
 rustc-serialize = "0.3"
 hyper = "0.9.10"
+select = "0.3.0"

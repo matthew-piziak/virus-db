@@ -1,13 +1,16 @@
-use std::fs::File;
 use std::io::prelude::*;
+use std::fs::File;
+use std::io;
 
 extern crate rustc_serialize;
 use rustc_serialize::json;
 
 extern crate hyper;
 
+extern crate select;
+
 #[derive(RustcDecodable, RustcEncodable, Debug)]
-pub struct VirusDatabase  {
+pub struct VirusDatabase {
     viruses: Vec<Virus>,
 }
 
@@ -18,18 +21,31 @@ pub struct Virus {
 }
 
 fn main() {
-    let mut viruses_json_file = File::open("viruses.json").unwrap();
-    let mut viruses_json_string = String::new();
-    viruses_json_file.read_to_string(&mut viruses_json_string).unwrap();
-    let virus_db: VirusDatabase = json::decode(&viruses_json_string).unwrap();
+    let virus_db = virus_db().expect("Could not load virus database");
     let client = hyper::Client::new();
     for virus in virus_db.viruses {
         println!("virus: {:?}", virus.name);
-        let link: &str = &format!("https://en.wikipedia.org/wiki/{}", virus.link);
-        let res = client.get(link).send().unwrap();
-        match res.status {
-            hyper::Ok => {println!("OK");}
-            other => {println!("failure: {:?}", other); panic!("Quitting.")}
+        let response = client.get(&format!("https://en.wikipedia.org/wiki/{}", virus.link)).send().unwrap();
+        let document = document(response);
+        for node in document.find(select::predicate::Class("group")).iter() {
+            println!("Group: {}", node.text());
+        }
+        for node in document.find(select::predicate::Class("family")).iter() {
+            println!("Family: {}", node.text());
         }
     }
+}
+
+fn document(mut response: hyper::client::response::Response) -> select::document::Document {
+    let mut body = String::new();
+    response.read_to_string(&mut body).unwrap();
+    let body_str: &str = &body;
+    select::document::Document::from(body_str)
+}
+
+fn virus_db() -> io::Result<VirusDatabase> {
+    let mut file = try!(File::open("viruses.json"));
+    let mut file_contents = String::new();
+    try!(file.read_to_string(&mut file_contents));
+    Ok(json::decode(&file_contents).unwrap())
 }
