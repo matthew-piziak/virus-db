@@ -1,52 +1,72 @@
 use std::io::prelude::*;
 
 extern crate hyper;
+use hyper::client::response::Response;
 
 extern crate select;
 use select::predicate::Name;
+use select::predicate::Class;
 
 pub struct VirusIndex {
     links: Vec<String>,
+}
+
+#[derive(Debug)]
+pub struct Virus {
+    name: String,
+    group: String,
+    family: String,
 }
 
 fn main() {
     let virus_db = virus_db().expect("Could not load virus database");
     let client = hyper::Client::new();
     for link in virus_db.links {
-        println!("Reading {:?}", link);
-        let response = client.get(&format!("https://en.wikipedia.org{}", link))
-                             .send()
-                             .unwrap();
-        let document = document(response);
-        for node in document.find(select::predicate::Class("group")).iter() {
-            println!("Group: {:?}", node.text());
-        }
-        for node in document.find(select::predicate::Class("family")).iter() {
-            println!("Family: {:?}", node.text());
+        if let Ok(virus) = virus(&client, link) {
+            println!("{:?}", virus);
         }
     }
 }
 
-fn virus_db() -> Result<VirusIndex, &'static str> {
-    let client = hyper::Client::new();
-    println!("Reading list of viruses");
-    let response = client.get("https://en.wikipedia.org/w/index.php?title=Special:\
-                               WhatLinksHere/Virus_classification&limit=2000")
+fn virus(client: &hyper::Client, link: String) -> Result<Virus, &'static str> {
+    let response = client.get(&format!("https://en.wikipedia.org{}", link))
                          .send()
                          .unwrap();
-    println!("Extracting document");
     let document = document(response);
+    let name = try!(document.find(Class("firstHeading")).first().ok_or("Virus name not found"));
+    let group = try!(document.find(Class("group")).first().ok_or("Virus group not found"));
+    let family = try!(document.find(Class("family")).first().ok_or("Virus family not found"));
+    Ok(Virus {
+        name: name.text(),
+        group: group.text(),
+        family: family.text(),
+    })
+}
+
+fn virus_db() -> Result<VirusIndex, &'static str> {
+    let virus_index_response = read_virus_index();
+    println!("Extracting document");
+    let document = document(virus_index_response);
     println!("Parsing links");
     let links = document.find(Name("li"))
                         .find(Name("a"))
                         .iter()
-        .filter_map(|link| link.attr("href").map(ToOwned::to_owned))
-        .filter(is_virus_link)
-        .collect();
+                        .filter_map(|link| link.attr("href").map(ToOwned::to_owned))
+                        .filter(is_virus_link)
+                        .collect();
     return Ok(VirusIndex { links: links });
 }
 
-fn document(mut response: hyper::client::response::Response) -> select::document::Document {
+fn read_virus_index() -> Response {
+    let client = hyper::Client::new();
+    println!("Reading list of viruses");
+    client.get("https://en.wikipedia.org/w/index.php?title=Special:\
+                WhatLinksHere/Virus_classification&limit=2000")
+          .send()
+          .unwrap()
+}
+
+fn document(mut response: Response) -> select::document::Document {
     let mut body = String::new();
     response.read_to_string(&mut body).unwrap();
     let body_str: &str = &body;
@@ -54,5 +74,5 @@ fn document(mut response: hyper::client::response::Response) -> select::document
 }
 
 fn is_virus_link(link: &String) -> bool {
-    link.contains("/wiki/") && !link.contains(":")
+    link.ends_with("virus") && link.contains("/wiki/") && !link.contains(":")
 }
