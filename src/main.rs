@@ -28,10 +28,8 @@ fn main() {
     }
 }
 
-fn virus(client: &hyper::Client, link: String) -> Result<Virus, &'static str> {
-    let response = client.get(&format!("https://en.wikipedia.org{}", link))
-                         .send()
-                         .unwrap();
+fn virus(client: &hyper::Client, link: String) -> Result<Virus, String> {
+    let response = try!(response(&client, link));
     let document = document(response);
     let name = try!(document.find(Class("firstHeading")).first().ok_or("Virus name not found"));
     let group = try!(document.find(Class("group")).first().ok_or("Virus group not found"));
@@ -41,6 +39,12 @@ fn virus(client: &hyper::Client, link: String) -> Result<Virus, &'static str> {
         group: group.text(),
         family: family.text(),
     })
+}
+
+fn response(client: &hyper::Client, link: String) -> Result<Response, String> {
+    client.get(&format!("https://en.wikipedia.org{}", link))
+          .send()
+          .map_err(|e| e.to_string())
 }
 
 fn virus_db() -> Result<VirusIndex, &'static str> {
