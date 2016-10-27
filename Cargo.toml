@@ -4,7 +4,8 @@ version = "0.1.0"
 authors = ["Matthew Piziak <matthew.piziak@gmail.com>"]
 
 [dependencies]
-rustc-serialize = "0.3"
 hyper = "0.9.10"
-select = "0.3.0"
 rayon = "0.4.3"
+rustc-serialize = "0.3"
+select = "0.3.0"
+time = "0.1"

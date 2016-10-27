@@ -1,4 +1,5 @@
 use std::io::prelude::*;
+use std::fmt::Debug;
 
 extern crate hyper;
 use hyper::client::response::Response;
@@ -9,6 +10,8 @@ use select::predicate::Class;
 
 extern crate rayon;
 use rayon::prelude::*;
+
+extern crate time;
 
 type Link = String;
 type VirusIndex = Vec<Link>;
@@ -27,7 +30,11 @@ fn main() {
             .filter_map(|link| {
                 virus(&client, link).ok()
             })
-            .for_each(|virus| println!("{:?}", virus));
+            .for_each(|virus| log(virus));
+}
+
+fn log<D: Debug>(d: D) {
+    println!("{} {:?}", time::now_utc().tm_nsec, d);
 }
 
 fn virus(client: &hyper::Client, link: String) -> Result<Virus, String> {
@@ -51,9 +58,9 @@ fn response(client: &hyper::Client, link: String) -> Result<Response, String> {
 
 fn virus_db() -> Result<VirusIndex, &'static str> {
     let virus_index_response = read_virus_index();
-    println!("Extracting document");
+    log("Extracting document");
     let document = document(virus_index_response);
-    println!("Parsing links");
+    log("Parsing links");
     let links = document.find(Name("li"))
                         .find(Name("a"))
                         .iter()
@@ -65,7 +72,7 @@ fn virus_db() -> Result<VirusIndex, &'static str> {
 
 fn read_virus_index() -> Response {
     let client = hyper::Client::new();
-    println!("Reading list of viruses");
+    log("Reading list of viruses");
     client.get("https://en.wikipedia.org/w/index.php?title=Special:\
                 WhatLinksHere/Virus_classification&limit=2000")
           .send()
