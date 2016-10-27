@@ -22,12 +22,12 @@ pub struct Virus {
 
 fn main() {
     let virus_db = virus_db().expect("Could not load virus database");
-    virus_db.into_par_iter().map(|link| {
-        let client = hyper::Client::new();
-        if let Ok(virus) = virus(&client, link) {
-            println!("{:?}", virus);
-        }
-    });
+    virus_db.into_par_iter()
+            .filter_map(|link| {
+                let client = hyper::Client::new();
+                virus(&client, link).ok()
+            })
+            .for_each(|virus| println!("{:?}", virus));
 }
 
 fn virus(client: &hyper::Client, link: String) -> Result<Virus, String> {
