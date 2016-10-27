@@ -7,6 +7,9 @@ extern crate select;
 use select::predicate::Name;
 use select::predicate::Class;
 
+extern crate rayon;
+use rayon::prelude::*;
+
 type Link = String;
 type VirusIndex = Vec<Link>;
 
@@ -18,13 +21,13 @@ pub struct Virus {
 }
 
 fn main() {
-    let virus_db = virus_db().expect("Could not load virus database");
-    let client = hyper::Client::new();
-    for link in virus_db {
-        if let Ok(virus) = virus(&client, link) {
+    let mut virus_db = virus_db().expect("Could not load virus database");
+    virus_db.par_iter_mut().for_each(|link| {
+        let client = hyper::Client::new();
+        if let Ok(virus) = virus(&client, link.clone()) {
             println!("{:?}", virus);
         }
-    }
+    });
 }
 
 fn virus(client: &hyper::Client, link: String) -> Result<Virus, String> {

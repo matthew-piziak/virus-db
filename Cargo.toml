@@ -7,3 +7,4 @@ authors = ["Matthew Piziak <matthew.piziak@gmail.com>"]
 rustc-serialize = "0.3"
 hyper = "0.9.10"
 select = "0.3.0"
+rayon = "0.4.3"
