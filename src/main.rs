@@ -21,10 +21,10 @@ pub struct Virus {
 }
 
 fn main() {
-    let mut virus_db = virus_db().expect("Could not load virus database");
-    virus_db.par_iter_mut().for_each(|link| {
+    let virus_db = virus_db().expect("Could not load virus database");
+    virus_db.into_par_iter().map(|link| {
         let client = hyper::Client::new();
-        if let Ok(virus) = virus(&client, link.clone()) {
+        if let Ok(virus) = virus(&client, link) {
             println!("{:?}", virus);
         }
     });
