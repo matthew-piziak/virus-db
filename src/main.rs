@@ -7,9 +7,8 @@ extern crate select;
 use select::predicate::Name;
 use select::predicate::Class;
 
-pub struct VirusIndex {
-    links: Vec<String>,
-}
+type Link = String;
+type VirusIndex = Vec<Link>;
 
 #[derive(Debug)]
 pub struct Virus {
@@ -21,7 +20,7 @@ pub struct Virus {
 fn main() {
     let virus_db = virus_db().expect("Could not load virus database");
     let client = hyper::Client::new();
-    for link in virus_db.links {
+    for link in virus_db {
         if let Ok(virus) = virus(&client, link) {
             println!("{:?}", virus);
         }
@@ -58,7 +57,7 @@ fn virus_db() -> Result<VirusIndex, &'static str> {
                         .filter_map(|link| link.attr("href").map(ToOwned::to_owned))
                         .filter(is_virus_link)
                         .collect();
-    return Ok(VirusIndex { links: links });
+    return Ok(links);
 }
 
 fn read_virus_index() -> Response {
