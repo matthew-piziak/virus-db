@@ -24,13 +24,11 @@ pub struct Virus {
 }
 
 fn main() {
-    let virus_db = virus_db().expect("Could not load virus database");
+    let virus_db = virus_db();
     let client = hyper::Client::new();
     virus_db.into_par_iter()
-            .filter_map(|link| {
-                virus(&client, link).ok()
-            })
-            .for_each(|virus| log(virus));
+            .filter_map(|link| virus(&client, link).ok())
+            .for_each(log);
 }
 
 fn log<D: Debug>(d: D) {
@@ -56,18 +54,17 @@ fn response(client: &hyper::Client, link: String) -> Result<Response, String> {
           .map_err(|e| e.to_string())
 }
 
-fn virus_db() -> Result<VirusIndex, &'static str> {
+fn virus_db() -> VirusIndex {
     let virus_index_response = read_virus_index();
     log("Extracting document");
     let document = document(virus_index_response);
     log("Parsing links");
-    let links = document.find(Name("li"))
-                        .find(Name("a"))
-                        .iter()
-                        .filter_map(|link| link.attr("href").map(ToOwned::to_owned))
-                        .filter(is_virus_link)
-                        .collect();
-    return Ok(links);
+    document.find(Name("li"))
+            .find(Name("a"))
+            .iter()
+            .filter_map(|link| link.attr("href").map(ToOwned::to_owned))
+            .filter(is_virus_link)
+            .collect()
 }
 
 fn read_virus_index() -> Response {
@@ -87,5 +84,5 @@ fn document(mut response: Response) -> select::document::Document {
 }
 
 fn is_virus_link(link: &String) -> bool {
-    link.ends_with("virus") && link.contains("/wiki/") && !link.contains(":")
+    link.ends_with("virus") && link.contains("/wiki/") && !link.contains(':')
 }
