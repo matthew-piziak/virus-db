@@ -34,7 +34,7 @@ fn main() {
 }
 
 fn log<D: Debug>(d: D) {
-    println!("{} {:?}", time::now_utc().tm_nsec, d);
+    println!("{} {:?}", time::now_utc().asctime(), d);
 }
 
 fn virus(client: &hyper::Client, link: String) -> Result<Virus, String> {
