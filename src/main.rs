@@ -9,10 +9,12 @@ use std::io::prelude::*;
 use std::fmt::Debug;
 
 extern crate hyper;
+use hyper::Client;
 use hyper::client::response::Response;
 
 extern crate select;
 use select::predicate::{Class, Name};
+use select::document::Document;
 
 extern crate rayon;
 use rayon::prelude::*;
@@ -21,6 +23,7 @@ extern crate time;
 
 type Link = String;
 type VirusIndex = Vec<Link>;
+type ScraperError = String;
 
 /// Attributes of a single scraped virus.
 #[derive(Debug)]
@@ -31,7 +34,7 @@ pub struct Virus {
 }
 
 fn main() {
-    let client = hyper::Client::new();
+    let client = Client::new();
     virus_db()
         .into_par_iter()
         .filter_map(|link| virus(&client, link).ok())
@@ -42,7 +45,7 @@ fn log<D: Debug>(d: D) {
     println!("{} {:?}", time::now_utc().asctime(), d);
 }
 
-fn virus(client: &hyper::Client, link: String) -> Result<Virus, String> {
+fn virus(client: &Client, link: Link) -> Result<Virus, ScraperError> {
     let response = try!(response(&client, link));
     let document = document(response);
     let name = try!(document.find(Class("firstHeading")).first().ok_or("Virus name not found"));
@@ -55,7 +58,7 @@ fn virus(client: &hyper::Client, link: String) -> Result<Virus, String> {
     })
 }
 
-fn response(client: &hyper::Client, link: String) -> Result<Response, String> {
+fn response(client: &Client, link: String) -> Result<Response, String> {
     client.get(&format!("https://en.wikipedia.org{}", link))
           .send()
           .map_err(|e| e.to_string())
@@ -75,7 +78,7 @@ fn virus_db() -> VirusIndex {
 }
 
 fn read_virus_index() -> Response {
-    let client = hyper::Client::new();
+    let client = Client::new();
     log("Reading list of viruses");
     client.get("https://en.wikipedia.org/w/index.php?title=Special:\
                 WhatLinksHere/Virus_classification&limit=2000")
@@ -83,11 +86,11 @@ fn read_virus_index() -> Response {
           .unwrap()
 }
 
-fn document(mut response: Response) -> select::document::Document {
+fn document(mut response: Response) -> Document {
     let mut body = String::new();
     response.read_to_string(&mut body).unwrap();
     let body_str: &str = &body;
-    select::document::Document::from(body_str)
+    Document::from(body_str)
 }
 
 fn is_virus_link(link: &String) -> bool {
