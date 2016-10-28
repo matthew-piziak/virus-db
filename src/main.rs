@@ -1,3 +1,6 @@
+//! Wikipedia scraper for biological viruses.
+
+#![deny(missing_docs)]
 use std::io::prelude::*;
 use std::fmt::Debug;
 
@@ -15,6 +18,7 @@ extern crate time;
 type Link = String;
 type VirusIndex = Vec<Link>;
 
+/// Attributes of a single scraped virus.
 #[derive(Debug)]
 pub struct Virus {
     name: String,
