@@ -2,9 +2,6 @@
 
 #![deny(missing_docs)]
 
-#![allow(unknown_lints)]
-#![allow(ptr_arg)]
-
 use std::io::prelude::*;
 use std::fmt::Debug;
 
@@ -13,7 +10,7 @@ use hyper::Client;
 use hyper::client::response::Response;
 
 extern crate select;
-use select::predicate::{Class, Name};
+use select::predicate::{Class, Name, Predicate};
 use select::document::Document;
 
 extern crate rayon;
@@ -48,9 +45,9 @@ fn log<D: Debug>(d: D) {
 fn virus(client: &Client, link: Link) -> Result<Virus, ScraperError> {
     let response = try!(response(&client, link));
     let document = document(response);
-    let name = try!(document.find(Class("firstHeading")).first().ok_or("Virus name not found"));
-    let group = try!(document.find(Class("group")).first().ok_or("Virus group not found"));
-    let family = try!(document.find(Class("family")).first().ok_or("Virus family not found"));
+    let name = try!(document.find(Class("firstHeading")).next().ok_or("Virus name not found"));
+    let group = try!(document.find(Class("group")).next().ok_or("Virus group not found"));
+    let family = try!(document.find(Class("family")).next().ok_or("Virus family not found"));
     Ok(Virus {
         name: name.text(),
         group: group.text(),
@@ -64,16 +61,15 @@ fn response(client: &Client, link: String) -> Result<Response, String> {
           .map_err(|e| e.to_string())
 }
 
-fn virus_db() -> VirusIndex {
+fn virus_db() -> Vec<String> {
     let virus_index_response = read_virus_index();
     log("Extracting document");
     let document = document(virus_index_response);
     log("Parsing links");
-    document.find(Name("li"))
-            .find(Name("a"))
-            .iter()
-            .filter_map(|link| link.attr("href").map(ToOwned::to_owned))
+    document.find(Name("li").descendant(Name("a")))
+            .filter_map(|link| link.attr("href"))
             .filter(is_virus_link)
+            .map(ToOwned::to_owned)
             .collect()
 }
 
@@ -93,6 +89,6 @@ fn document(mut response: Response) -> Document {
     Document::from(body_str)
 }
 
-fn is_virus_link(link: &String) -> bool {
+fn is_virus_link(link: &&str) -> bool {
     link.ends_with("virus") && link.contains("/wiki/") && !link.contains(':')
 }
