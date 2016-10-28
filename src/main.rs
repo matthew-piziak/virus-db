@@ -1,7 +1,5 @@
 //! Wikipedia scraper for biological viruses.
 
-#![deny(missing_docs)]
-
 use std::io::prelude::*;
 use std::fmt::Debug;
 
