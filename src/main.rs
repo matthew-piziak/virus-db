@@ -32,7 +32,7 @@ pub struct Virus {
 
 fn main() {
     let client = Client::new();
-    virus_db()
+    virus_index()
         .into_par_iter()
         .filter_map(|link| virus(&client, link).ok())
         .for_each(log);
@@ -61,7 +61,7 @@ fn response(client: &Client, link: String) -> Result<Response, String> {
           .map_err(|e| e.to_string())
 }
 
-fn virus_db() -> Vec<String> {
+fn virus_index() -> VirusIndex {
     let virus_index_response = read_virus_index();
     log("Extracting document");
     let document = document(virus_index_response);
@@ -75,7 +75,7 @@ fn virus_db() -> Vec<String> {
 
 fn read_virus_index() -> Response {
     let client = Client::new();
-    log("Reading list of viruses");
+    log("Reading virus index");
     client.get("https://en.wikipedia.org/w/index.php?title=Special:\
                 WhatLinksHere/Virus_classification&limit=2000")
           .send()
