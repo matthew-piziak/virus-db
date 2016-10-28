@@ -5,8 +5,7 @@ extern crate hyper;
 use hyper::client::response::Response;
 
 extern crate select;
-use select::predicate::Name;
-use select::predicate::Class;
+use select::predicate::{Class, Name};
 
 extern crate rayon;
 use rayon::prelude::*;
