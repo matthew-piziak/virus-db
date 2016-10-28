@@ -31,11 +31,11 @@ pub struct Virus {
 }
 
 fn main() {
-    let virus_db = virus_db();
     let client = hyper::Client::new();
-    virus_db.into_par_iter()
-            .filter_map(|link| virus(&client, link).ok())
-            .for_each(log);
+    virus_db()
+        .into_par_iter()
+        .filter_map(|link| virus(&client, link).ok())
+        .for_each(log);
 }
 
 fn log<D: Debug>(d: D) {
