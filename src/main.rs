@@ -33,31 +33,6 @@ fn main() {
         .for_each(log);
 }
 
-fn log<D: Debug>(d: D) {
-    extern crate time;
-
-    println!("{} {:?}", time::now_utc().asctime(), d);
-}
-
-fn virus(client: &Client, link: Link) -> Result<Virus, ScraperError> {
-    let response = try!(response(&client, link));
-    let document = document(response);
-    let name = try!(document.find(Class("firstHeading")).next().ok_or("Virus name not found"));
-    let group = try!(document.find(Class("group")).next().ok_or("Virus group not found"));
-    let family = try!(document.find(Class("family")).next().ok_or("Virus family not found"));
-    Ok(Virus {
-        name: name.text(),
-        group: group.text(),
-        family: family.text(),
-    })
-}
-
-fn response(client: &Client, link: String) -> Result<Response, String> {
-    client.get(&format!("https://en.wikipedia.org{}", link))
-          .send()
-          .map_err(|e| e.to_string())
-}
-
 fn virus_index() -> VirusIndex {
     let virus_index_response = read_virus_index();
     log("Extracting document");
@@ -90,4 +65,29 @@ fn document(mut response: Response) -> Document {
 
 fn is_virus_link(link: &&str) -> bool {
     link.ends_with("virus") && link.contains("/wiki/") && !link.contains(':')
+}
+
+fn virus(client: &Client, link: Link) -> Result<Virus, ScraperError> {
+    let response = try!(response(&client, link));
+    let document = document(response);
+    let name = try!(document.find(Class("firstHeading")).next().ok_or("Virus name not found"));
+    let group = try!(document.find(Class("group")).next().ok_or("Virus group not found"));
+    let family = try!(document.find(Class("family")).next().ok_or("Virus family not found"));
+    Ok(Virus {
+        name: name.text(),
+        group: group.text(),
+        family: family.text(),
+    })
+}
+
+fn response(client: &Client, link: String) -> Result<Response, String> {
+    client.get(&format!("https://en.wikipedia.org{}", link))
+          .send()
+          .map_err(|e| e.to_string())
+}
+
+fn log<D: Debug>(d: D) {
+    extern crate time;
+
+    println!("{} {:?}", time::now_utc().asctime(), d);
 }
