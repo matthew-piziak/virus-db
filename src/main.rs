@@ -1,6 +1,5 @@
 //! Wikipedia scraper for biological viruses.
 
-use std::io::prelude::*;
 use std::fmt::Debug;
 
 extern crate hyper;
@@ -13,8 +12,6 @@ use select::document::Document;
 
 extern crate rayon;
 use rayon::prelude::*;
-
-extern crate time;
 
 type Link = String;
 type VirusIndex = Vec<Link>;
@@ -37,6 +34,8 @@ fn main() {
 }
 
 fn log<D: Debug>(d: D) {
+    extern crate time;
+
     println!("{} {:?}", time::now_utc().asctime(), d);
 }
 
@@ -81,6 +80,8 @@ fn read_virus_index() -> Response {
 }
 
 fn document(mut response: Response) -> Document {
+    use std::io::prelude::*;
+
     let mut body = String::new();
     response.read_to_string(&mut body).unwrap();
     let body_str: &str = &body;
