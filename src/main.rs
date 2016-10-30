@@ -28,30 +28,30 @@ pub struct Virus {
 fn main() {
     let client = Client::new();
     virus_index()
+        .unwrap()
         .into_par_iter()
         .filter_map(|link| virus(&client, link).ok())
         .for_each(log);
 }
 
-fn virus_index() -> VirusIndex {
-    let virus_index_response = read_virus_index();
+fn virus_index() -> Result<VirusIndex, hyper::Error> {
+    let virus_index_response = try!(read_virus_index());
     log("Extracting document");
     let document = document(virus_index_response);
     log("Parsing links");
-    document.find(Name("li").descendant(Name("a")))
-            .filter_map(|link| link.attr("href"))
-            .filter(is_virus_link)
-            .map(ToOwned::to_owned)
-            .collect()
+    Ok(document.find(Name("li").descendant(Name("a")))
+               .filter_map(|link| link.attr("href"))
+               .filter(is_virus_link)
+               .map(ToOwned::to_owned)
+               .collect())
 }
 
-fn read_virus_index() -> Response {
+fn read_virus_index() -> Result<Response, hyper::Error> {
     let client = Client::new();
     log("Reading virus index");
     client.get("https://en.wikipedia.org/w/index.php?title=Special:\
                 WhatLinksHere/Virus_classification&limit=2000")
           .send()
-          .unwrap()
 }
 
 fn document(mut response: Response) -> Document {
